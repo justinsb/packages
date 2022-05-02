@@ -1,0 +1,9 @@
+apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: tenant
+info:
+  description: sample description
+pipeline:
+  mutators: []
+    # - image: porch.kpt.dev/samples/init-tenant:latest
