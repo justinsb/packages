@@ -3,6 +3,8 @@ kind: Folder
 metadata:
   name: name
   namespace: config-control
+  labels:
+    contains.kpt.dev/gkecluster: ""
 spec:
   folderRef:
     name: environments
