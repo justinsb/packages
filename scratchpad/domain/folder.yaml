@@ -17,6 +17,8 @@ kind: Folder
 metadata:
   name: environments
   namespace: config-control
+  labels:
+    contains.kpt.dev/environments: ""
 spec:
   displayName: environments
   folderRef:
