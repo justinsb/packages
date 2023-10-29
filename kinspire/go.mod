@@ -1,6 +1,6 @@
-module justinsb/kinspire
+module github.com/justinsb/packages/kinspire
 
-go 1.20
+go 1.21.3
 
 require (
 	github.com/spiffe/go-spiffe/v2 v2.1.6

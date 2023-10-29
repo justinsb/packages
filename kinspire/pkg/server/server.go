@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
-	"justinsb/kinspire/pkg/certs"
 	"net/url"
 	"strings"
 	"time"
@@ -18,6 +17,8 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 	authenticationv1 "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	"k8s.io/klog/v2"
+
+	"github.com/justinsb/packages/kinspire/pkg/certs"
 )
 
 type SPIREServer struct {

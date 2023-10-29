@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"justinsb/kinspire/pkg/server"
 	"net"
 	"net/url"
 	"os"
@@ -15,6 +14,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+
+	"github.com/justinsb/packages/kinspire/pkg/server"
 )
 
 func main() {

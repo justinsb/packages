@@ -6,8 +6,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"justinsb/kinspire/pkg/certs"
 	"time"
+
+	"github.com/justinsb/packages/kinspire/pkg/certs"
 )
 
 type ServerCertificates struct {

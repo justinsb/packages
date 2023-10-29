@@ -4,9 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"justinsb/kinspire/pkg/client"
 	"os"
 	"time"
+
+	"github.com/justinsb/packages/kinspire/pkg/client"
 )
 
 func main() {

@@ -6,7 +6,6 @@ import (
 	"crypto/x509/pkix"
 	"flag"
 	"fmt"
-	"justinsb/kinspire/pkg/certs"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -17,6 +16,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+
+	"github.com/justinsb/packages/kinspire/pkg/certs"
 )
 
 func main() {

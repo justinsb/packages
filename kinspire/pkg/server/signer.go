@@ -5,9 +5,10 @@ import (
 	"crypto"
 	"crypto/x509"
 	"fmt"
-	"justinsb/kinspire/pkg/certs"
 	"os"
 	"path/filepath"
+
+	"github.com/justinsb/packages/kinspire/pkg/certs"
 )
 
 type LocalSigner struct {

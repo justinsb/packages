@@ -29,6 +29,10 @@ var SPIFFE spiffe
 // 	}
 // }
 
+func (s *spiffe) Source() *SPIFFESource {
+	return s.source
+}
+
 func (s *spiffe) Init(ctx context.Context) error {
 	spireConfig, err := newSpireConfig(ctx)
 	if err != nil {
