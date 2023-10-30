@@ -106,7 +106,7 @@ func (s *SPIREServer) FetchX509SVID(req *workload.X509SVIDRequest, stream worklo
 		NotAfter:  time.Now().AddDate(10, 0, 0),
 
 		KeyUsage:              x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 		IsCA:                  false,
 		BasicConstraintsValid: true,
 	}
