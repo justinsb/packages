@@ -11,7 +11,6 @@ import (
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/svid/x509svid"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/encoding/prototext"
 	"k8s.io/klog/v2"
 )
 
@@ -77,7 +76,7 @@ func (s *SPIFFESource) watchOnce(ctx context.Context) error {
 		s.mutex.Lock()
 		s.last = msg
 		s.mutex.Unlock()
-		klog.Infof("got message from x509 svid stream: %v", prototext.Format(msg))
+		klog.Infof("got %T message from x509 svid stream", msg)
 	}
 }
 
