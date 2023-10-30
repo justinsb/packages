@@ -4,7 +4,7 @@ go 1.21.3
 
 require (
 	github.com/jackc/pgx/v5 v5.4.3
-	github.com/justinsb/packages/kinspire/client v0.0.0-20231030034513-1e0fb8c12cd8
+	github.com/justinsb/packages/kinspire/client v0.0.0-20231030130235-7600d45bc673
 	k8s.io/klog/v2 v2.100.1
 )
 
