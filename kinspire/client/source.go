@@ -135,7 +135,7 @@ func (s *SPIFFESource) GetX509BundleForTrustDomain(trustDomain spiffeid.TrustDom
 	if err != nil {
 		return nil, fmt.Errorf("parsing svid domain %q: %w", last.Svids[0].SpiffeId, err)
 	}
-	bundle, err := x509bundle.Parse(trustDomain, last.Svids[0].Bundle)
+	bundle, err := x509bundle.ParseRaw(trustDomain, last.Svids[0].Bundle)
 	if err != nil {
 		return nil, fmt.Errorf("parsing bundle data: %w", err)
 	}

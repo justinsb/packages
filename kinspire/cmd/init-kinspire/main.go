@@ -77,7 +77,7 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	caCertBytes, err := certs.EncodeCertificate(caCert)
+	caCertBytes, err := certs.PEMEncodeCertificate(caCert)
 	if err != nil {
 		return err
 	}

@@ -118,8 +118,8 @@ func DecodePrivateKey(b []byte) (crypto.PrivateKey, error) {
 	return keys[0], nil
 }
 
-func WriteCertificate(p string, cert *x509.Certificate) error {
-	b, err := EncodeCertificate(cert)
+func WritePEMCertificate(p string, cert *x509.Certificate) error {
+	b, err := PEMEncodeCertificate(cert)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func WriteCertificate(p string, cert *x509.Certificate) error {
 	return nil
 }
 
-func EncodeCertificates(certs []*x509.Certificate) ([]byte, error) {
+func PEMEncodeCertificates(certs []*x509.Certificate) ([]byte, error) {
 	var buf bytes.Buffer
 	for _, cert := range certs {
 		if err := pem.Encode(&buf, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw}); err != nil {
@@ -139,7 +139,7 @@ func EncodeCertificates(certs []*x509.Certificate) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func EncodeCertificate(cert *x509.Certificate) ([]byte, error) {
+func PEMEncodeCertificate(cert *x509.Certificate) ([]byte, error) {
 	derBytes := cert.Raw
 	pemCert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	if pemCert == nil {

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -17,8 +18,6 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 	authenticationv1 "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	"k8s.io/klog/v2"
-
-	"github.com/justinsb/packages/kinspire/pkg/certs"
 )
 
 type SPIREServer struct {
@@ -123,11 +122,17 @@ func (s *SPIREServer) FetchX509SVID(req *workload.X509SVIDRequest, stream worklo
 		klog.Warningf("error getting ca bundle: %v", err)
 		return status.Errorf(codes.Internal, "error getting ca bundle")
 	}
-	caCertificateBytes, err := certs.EncodeCertificates(caCertificates)
-	if err != nil {
-		klog.Warningf("error encoding ca bundle: %v", err)
-		return status.Errorf(codes.Internal, "error encoding ca bundle")
+	var caCertificateBytes bytes.Buffer
+	for _, caCert := range caCertificates {
+		if _, err := caCertificateBytes.Write(caCert.Raw); err != nil {
+			return status.Errorf(codes.Internal, "error encoding ca bundle")
+		}
 	}
+	// caCertificateBytes, err := certs.EncodeCertificates(caCertificates)
+	// if err != nil {
+	// 	klog.Warningf("error encoding ca bundle: %v", err)
+	// 	return status.Errorf(codes.Internal, "error encoding ca bundle")
+	// }
 
 	// certBytes, err := x509svid..EncodeCertificate(cert)
 	// if err != nil {
@@ -143,7 +148,7 @@ func (s *SPIREServer) FetchX509SVID(req *workload.X509SVIDRequest, stream worklo
 
 	svid := &workload.X509SVID{}
 	svid.SpiffeId = s.trustDomain.String()
-	svid.Bundle = caCertificateBytes
+	svid.Bundle = caCertificateBytes.Bytes()
 	svid.X509Svid = cert.Raw
 	svid.X509SvidKey = privateKeyBytes
 

@@ -46,7 +46,7 @@ func CreateServerCertificates(ctx context.Context, signer *LocalSigner) (*Server
 	}
 
 	// There might be a better way to do this, but this is pretty robust
-	serverCertBytes, err := certs.EncodeCertificate(serverCert)
+	serverCertBytes, err := certs.PEMEncodeCertificate(serverCert)
 	if err != nil {
 		return nil, err
 	}

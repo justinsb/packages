@@ -3,6 +3,7 @@ module github.com/justinsb/packages/kinspire
 go 1.21.3
 
 require (
+	github.com/justinsb/packages/kinspire/client v0.0.0-20231030004224-ecd8c1951bdb
 	github.com/spiffe/go-spiffe/v2 v2.1.6
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.30.0

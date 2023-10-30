@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/justinsb/packages/kinspire/pkg/client"
+	"github.com/justinsb/packages/kinspire/client"
 )
 
 func main() {
