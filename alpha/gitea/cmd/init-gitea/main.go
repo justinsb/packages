@@ -42,7 +42,7 @@ func run(ctx context.Context) error {
 	}
 
 	gitea := &Gitea{
-		ConfigDir:  "/config",
+		ConfigDir:  "/volumes/data/config",
 		SocketsDir: "/sockets",
 	}
 
@@ -123,7 +123,26 @@ func (c *Gitea) runPostgresProxy(ctx context.Context) error {
 }
 
 func (c *Gitea) writeGiteaConfig(ctx context.Context) error {
+	p := filepath.Join(c.ConfigDir, "gitea.ini")
+	existing, err := os.ReadFile(p)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("error reading config file %q: %w", p, err)
+		}
+		existing = nil
+	}
+	if existing != nil {
+		// TODO: Need to figure out what to do here?  I think it's when we set INSTALL_LOCK that we don't load again
+		// But we also need to init some tokens etc
+		klog.Warningf("ignoring config file")
+		return nil
+	}
 	config := ini.New()
+
+	main := config.Section("")
+	main.Set("APP_NAME", "Gitea") // Page title
+	main.Set("WORK_PATH", "/volumes/data/work")
+	main.Set("RUN_MODE", "prod")
 
 	db := config.Section("database")
 	db.Set("DB_TYPE", "postgres")
@@ -134,7 +153,7 @@ func (c *Gitea) writeGiteaConfig(ctx context.Context) error {
 	db.Set("LOG_SQL", "true") // Really only for debugging
 
 	server := config.Section("server")
-	server.Set("APP_DATA_PATH", "/volumes/data")
+	server.Set("APP_DATA_PATH", "/volumes/data/appdata")
 	// TODO: Where should we store the SSH secrets?  (And are these really the secrets?)
 	server.Set("SSH_ROOT_PATH", "/volumes/data/ssh")
 
@@ -153,7 +172,6 @@ func (c *Gitea) writeGiteaConfig(ctx context.Context) error {
 		return fmt.Errorf("writing config: %w", err)
 	}
 
-	p := filepath.Join(c.ConfigDir, "gitea.ini")
 	klog.Infof("config is:\n%v", bb.String())
 	if err := os.WriteFile(p, bb.Bytes(), 0644); err != nil {
 		return fmt.Errorf("error writing file %q: %w", p, err)

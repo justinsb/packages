@@ -63,8 +63,10 @@ func (i *File) WriteTo(w io.Writer) error {
 }
 
 func (i *Section) WriteTo(w io.Writer) error {
-	if _, err := fmt.Fprintf(w, "[%s]\n", i.name); err != nil {
-		return err
+	if i.name != "" {
+		if _, err := fmt.Fprintf(w, "[%s]\n", i.name); err != nil {
+			return err
+		}
 	}
 	var keys []string
 	for k := range i.values {
