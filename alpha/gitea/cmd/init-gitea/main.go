@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -157,11 +158,25 @@ func (c *Gitea) writeGiteaConfig(ctx context.Context) error {
 	// TODO: Where should we store the SSH secrets?  (And are these really the secrets?)
 	server.Set("SSH_ROOT_PATH", "/volumes/data/ssh")
 
+	// TODO: Should we use PROTOCOL unix?
+	server.Set("HTTP_ADDR", "127.0.0.1") // We access through the proxy
+
 	lfs := config.Section("lfs")
 	lfs.Set("PATH", "/volumes/data/lfs")
 
 	log := config.Section("log")
 	log.Set("ROOT_PATH", "/volumes/data/log")
+
+	security := config.Section("security")
+	security.Set("REVERSE_PROXY_AUTHENTICATION_USER", "X-WEBAUTH-USER")
+	security.Set("REVERSE_PROXY_AUTHENTICATION_EMAIL", "X-WEBAUTH-EMAIL")
+	security.Set("REVERSE_PROXY_AUTHENTICATION_FULL_NAME", "X-WEBAUTH-FULLNAME")
+
+	service := config.Section("service")
+	service.Set("ENABLE_REVERSE_PROXY_AUTHENTICATION", "true")
+	service.Set("ENABLE_REVERSE_PROXY_AUTO_REGISTRATION", "true")
+	service.Set("ENABLE_REVERSE_PROXY_EMAIL", "true")
+	service.Set("ENABLE_REVERSE_PROXY_FULL_NAME", "true")
 
 	// TODO: maybe we don't need the proxy?
 	//     ; CERT_FILE = https/cert.pem
@@ -184,10 +199,6 @@ type GiteaProxy struct {
 
 func (p *GiteaProxy) Run(ctx context.Context) error {
 	klog.Infof("building proxy")
-	proxy, err := p.buildProxy()
-	if err != nil {
-		return err
-	}
 
 	// Allowed SPIFFE ID
 	clientID := spiffeid.RequireFromString("spiffe://k8s.local/ns/default/sa/gateway-instance")
@@ -196,10 +207,18 @@ func (p *GiteaProxy) Run(ctx context.Context) error {
 
 	klog.Infof("creating httpserver")
 	// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID `spiffe://example.org/client`
-	tlsConfig := tlsconfig.MTLSServerConfig(source, source, tlsconfig.AuthorizeID(clientID))
+	tlsServerConfig := tlsconfig.MTLSServerConfig(source, source, tlsconfig.AuthorizeID(clientID))
+
+	tlsClientConfig := tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeAny())
+
+	proxy, err := p.buildProxy(tlsClientConfig)
+	if err != nil {
+		return err
+	}
+
 	server := &http.Server{
 		Addr:              ":8443",
-		TLSConfig:         tlsConfig,
+		TLSConfig:         tlsServerConfig,
 		ReadHeaderTimeout: time.Second * 10,
 		Handler:           proxy,
 	}
@@ -212,22 +231,94 @@ func (p *GiteaProxy) Run(ctx context.Context) error {
 	return nil
 }
 
-func (p *GiteaProxy) buildProxy() (http.Handler, error) {
+func (p *GiteaProxy) buildProxy(tlsClientConfig *tls.Config) (http.Handler, error) {
 	target := "http://127.0.0.1:3000"
 	targetURL, err := url.Parse(target)
 	if err != nil {
 		return nil, fmt.Errorf("parsing url %q: %w", targetURL, err)
 	}
+
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsClientConfig,
+		},
+	}
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(r *httputil.ProxyRequest) {
-			// klog.Infof("request is in=%+v, out=%+v", r.In, r.Out)
-			// klog.Infof("r.in.tls = %+v", r.In.TLS)
-			// klog.Infof("r.in.tls.peerCertificates = %+v", r.In.TLS.PeerCertificates)
+			ctx := r.In.Context()
+			userInfo, err := p.getUserInfo(ctx, httpClient, r)
+			if err != nil {
+				// TODO: How can we surface an error?
+				klog.Warningf("error getting user info: %v", err)
+				userInfo = nil
+			}
+			if userInfo != nil {
+				klog.Infof("got user info %+v", userInfo)
+
+				userName := userInfo.PreferredUsername
+				// CreateUser: name is invalid [foo@example.com]: must be valid alpha or numeric or dash(-_) or dot characters
+				userName = strings.ReplaceAll(userName, "@", ".")
+
+				r.Out.Header.Set("X-WEBAUTH-USER", userName)
+				r.Out.Header.Set("X-WEBAUTH-EMAIL", userInfo.Email)
+				r.Out.Header.Set("X-WEBAUTH-FULLNAME", userInfo.Name)
+			}
+
 			r.SetURL(targetURL)
-			// r.Out.Host = r.In.Host // if desired
 		},
 	}
 	return proxy, nil
+}
+
+type userInfo struct {
+	Email             string `json:"email,omitempty"`
+	Name              string `json:"name,omitempty"`
+	PreferredUsername string `json:"preferred_username,omitempty"`
+}
+
+func (p *GiteaProxy) getUserInfo(ctx context.Context, httpClient *http.Client, r *httputil.ProxyRequest) (*userInfo, error) {
+	server := "https://kweb-sso.kweb-sso-system/.oidc/userinfo"
+
+	targetURL, err := url.Parse(server)
+	if err != nil {
+		return nil, fmt.Errorf("parsing url %q: %w", targetURL, err)
+	}
+
+	req, err := http.NewRequest("GET", server, nil)
+	if err != nil {
+		return nil, fmt.Errorf("building request: %w", err)
+	}
+
+	// req.Header.Add("Authorization", r.In.Header.Get("Authorization"))
+	authToken, err := r.In.Cookie("auth-token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			return nil, fmt.Errorf("no auth token cookie found")
+		}
+		return nil, fmt.Errorf("reading cookie: %w", err)
+	}
+	req.Header.Add("Authorization", "Bearer "+authToken.Value)
+
+	response, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("doing userinfo request: %w", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("unexpected response from userinfo request: %v", response.Status)
+	}
+	b, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading response from userinfo request: %w", err)
+	}
+	userInfo := &userInfo{}
+	if err := json.Unmarshal(b, userInfo); err != nil {
+		return nil, fmt.Errorf("parsing userinfo response: %w", err)
+	}
+
+	// TODO: Caching?
+
+	return userInfo, nil
 }
 
 type PostgresProxy struct {
