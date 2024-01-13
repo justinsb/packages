@@ -88,7 +88,7 @@ func (s *spiffe) Init(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	klog.Infof("svid is %v", svid)
+	klog.Infof("svid is %v", svid.ID)
 
 	return nil
 }

@@ -14,6 +14,11 @@ import (
 	"k8s.io/klog/v2"
 )
 
+type Source interface {
+	x509svid.Source
+	x509bundle.Source
+}
+
 type SPIFFESource struct {
 	// ctx    context.Context
 	cancel func()
