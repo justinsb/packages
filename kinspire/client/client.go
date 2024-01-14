@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	pb "github.com/justinsb/packages/kinspire/pb/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
@@ -14,7 +15,8 @@ import (
 )
 
 type spiffe struct {
-	source *SPIFFESource
+	source   *SPIFFESource
+	kinspire pb.KinspireClient
 
 	configClient *spireConfigMap
 }
@@ -66,6 +68,8 @@ func (s *spiffe) Init(ctx context.Context) error {
 		return err
 	}
 	s.source = source
+
+	s.kinspire = pb.NewKinspireClient(grpcConn)
 
 	// client, err := workloadapi.New(ctx, workloadapi.WithAddr(addr), workloadapi.WithDialOptions(grpcOptions...), workloadapi.WithLogger(logger.Std))
 	// if err != nil {

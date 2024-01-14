@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package blobstore;
+
+
+import "google/protobuf/timestamp.proto";
+
+
+option go_package = "github.com/justinsb/packages/kinspire/pb/v1";
+
+service Kinspire {
+  rpc GetExternalAuth(GetExternalAuthRequest) returns (GetExternalAuthReply) {}
+}
+
+message GetExternalAuthRequest {
+  string target = 1;
+}
+
+message GetExternalAuthReply {
+  AWSAuthentication aws_auth = 1;
+}
+
+message AWSAuthentication {
+  string access_key_id = 1;
+  string secret_access_key = 2;
+  string session_token = 3;
+  google.protobuf.Timestamp expiration_time = 4;
+}

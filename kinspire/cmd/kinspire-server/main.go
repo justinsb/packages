@@ -11,10 +11,13 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	api "github.com/justinsb/packages/kinspire/api"
 	"github.com/justinsb/packages/kinspire/pkg/server"
 )
 
@@ -39,9 +42,20 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("getting kube config: %w", err)
 	}
-	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	scheme := runtime.NewScheme()
+	if err := api.AllKinds.AddToScheme(scheme); err != nil {
+		return fmt.Errorf("building kube scheme: %w", err)
+	}
+	// TODO: Caching?
+	kubeClient, err := client.New(restConfig, client.Options{
+		Scheme: scheme,
+	})
 	if err != nil {
 		return fmt.Errorf("building kube client: %w", err)
+	}
+	typedKubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return fmt.Errorf("building typed kube client: %w", err)
 	}
 
 	signer, err := server.NewLocalSigner()
@@ -59,7 +73,7 @@ func run(ctx context.Context) error {
 	opts = []grpc.ServerOption{grpc.Creds(creds)}
 
 	grpcServer := grpc.NewServer(opts...)
-	s, err := server.NewSPIREServer(kubeClient.AuthenticationV1(), signer, trustDomainURL)
+	s, err := server.NewSPIREServer(kubeClient, typedKubeClient, signer, trustDomainURL)
 	if err != nil {
 		return err
 	}
