@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: auth-system
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: auth-system
+  name: kinspire-server
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: auth-system:kinspire-server
+rules:
+- apiGroups: ["authentication.k8s.io"]
+  resources: ["tokenreviews"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["serviceaccounts/token"]
+  verbs: ["create"]
+- apiGroups: ["kweb.dev"]
+  resources: ["awsauths"]
+  verbs: ["get", "list", "watch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: auth-system:kinspire-server
+subjects:
+- kind: ServiceAccount
+  name: kinspire-server
+  namespace: auth-system
+roleRef:
+  kind: ClusterRole
+  name: auth-system:kinspire-server
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: auth-system
+  name: kinspire-server
+spec:
+  ports:
+  - name: https
+    port: 443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    app: kinspire-server
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kinspire-server
+  namespace: auth-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kinspire-server
+  template:
+    metadata:
+      labels:
+        app: kinspire-server
+    spec:
+      containers:
+      - command:
+        image: image-repo/kinspire-server:latest
+        name: kinspire-server
+        volumeMounts:
+          - mountPath: "/secrets/ca"
+            name: ca
+            readOnly: true
+      serviceAccount: kinspire-server
+      volumes:
+        - name: ca
+          secret:
+            secretName: kinspire-ca
+
