@@ -10,6 +10,7 @@ push:
 .PHONY: apply
 apply: push
 	cat ./k8s/manifest.yaml | sed -e s~image-repo~${IMAGE_REPO}~g | kubectl apply -f -
+	cat ./k8s/public-configmap.yaml | kubectl apply -f -
 
 .PHONY: bounce
 bounce:
