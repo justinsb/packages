@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.26.7
 	github.com/justinsb/packages/kinspire/client v0.0.0-20231030004224-ecd8c1951bdb
 	github.com/spiffe/go-spiffe/v2 v2.1.6
+	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
 	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0
 	k8s.io/api v0.28.3

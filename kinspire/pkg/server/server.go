@@ -12,6 +12,7 @@ import (
 
 	v1 "github.com/justinsb/packages/kinspire/pb/v1"
 	"github.com/spiffe/go-spiffe/v2/proto/spiffe/workload"
+	"golang.org/x/exp/maps"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -102,16 +103,19 @@ func (s *SPIREServer) authenticate(ctx context.Context) (Identity, error) {
 
 	klog.Infof("auth %v", auth)
 
-	expectedAudience := "kubernetes.svc.default"
+	expectedAudiences := map[string]bool{
+		"kubernetes.svc.default":                       true, // kOps (?))
+		"https://kubernetes.default.svc.cluster.local": true, // kind
+	}
 	hasAudience := false
 	for _, aud := range auth.Audiences {
-		if aud == expectedAudience {
+		if expectedAudiences[aud] {
 			hasAudience = true
 		}
 	}
 
 	if !hasAudience {
-		klog.Warningf("user did not have expected audience %q: %+v", expectedAudience, auth)
+		klog.Warningf("user did not have expected audience %v: %+v", maps.Keys(expectedAudiences), auth)
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
 	}
 
