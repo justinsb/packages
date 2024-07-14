@@ -2,6 +2,8 @@ module github.com/justinsb/packages/kinspire/client
 
 go 1.21.3
 
+toolchain go1.22.5
+
 require (
 	github.com/spiffe/go-spiffe/v2 v2.1.6
 	google.golang.org/grpc v1.53.0

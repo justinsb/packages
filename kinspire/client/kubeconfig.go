@@ -66,6 +66,12 @@ type configMap struct {
 }
 
 func newInClusterClient(ctx context.Context) (*simpleKubeClient, error) {
+	endpoint := os.Getenv("KUBERNETES_SERVICE_HOST")
+	if endpoint == "" {
+		endpoint = "kubernetes.default"
+	}
+	endpoint = "https://" + endpoint + "/"
+
 	p := "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 	b, err := os.ReadFile(p)
 	if err != nil {
@@ -82,6 +88,7 @@ func newInClusterClient(ctx context.Context) (*simpleKubeClient, error) {
 	}
 
 	c := &simpleKubeClient{}
+	c.endpoint = endpoint
 	c.httpClient = &http.Client{}
 	c.httpClient.Transport = &http.Transport{
 		TLSClientConfig: tlsClientConfig,
@@ -91,7 +98,7 @@ func newInClusterClient(ctx context.Context) (*simpleKubeClient, error) {
 }
 
 func (p *simpleKubeClient) loadConfigMap(ctx context.Context, namespace string, name string) (*configMap, error) {
-	u := "https://kubernetes.default/api/v1/namespaces/" + namespace + "/configmaps/" + name
+	u := p.endpoint + "/api/v1/namespaces/" + namespace + "/configmaps/" + name
 	b, err := p.getURL(ctx, u)
 	if err != nil {
 		return nil, fmt.Errorf("reading configmap %s/%s: %w", namespace, name, err)
