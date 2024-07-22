@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 )
@@ -58,6 +59,7 @@ func newSpireConfig(ctx context.Context) (*spireConfigMap, error) {
 }
 
 type simpleKubeClient struct {
+	endpoint   string
 	httpClient *http.Client
 }
 
@@ -69,6 +71,12 @@ func newInClusterClient(ctx context.Context) (*simpleKubeClient, error) {
 	endpoint := os.Getenv("KUBERNETES_SERVICE_HOST")
 	if endpoint == "" {
 		endpoint = "kubernetes.default"
+	}
+
+	if ip := net.ParseIP(endpoint); ip != nil {
+		if ip.To4() == nil {
+			endpoint = "[" + endpoint + "]"
+		}
 	}
 	endpoint = "https://" + endpoint + "/"
 
@@ -98,7 +106,7 @@ func newInClusterClient(ctx context.Context) (*simpleKubeClient, error) {
 }
 
 func (p *simpleKubeClient) loadConfigMap(ctx context.Context, namespace string, name string) (*configMap, error) {
-	u := p.endpoint + "/api/v1/namespaces/" + namespace + "/configmaps/" + name
+	u := p.endpoint + "api/v1/namespaces/" + namespace + "/configmaps/" + name
 	b, err := p.getURL(ctx, u)
 	if err != nil {
 		return nil, fmt.Errorf("reading configmap %s/%s: %w", namespace, name, err)
